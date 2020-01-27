@@ -1,7 +1,9 @@
 require('dotenv').config();
 
-const appRootPath = process.env.APP_ROUTE_PATH.replace(/\/$/, '') || '';
-const iconFolder = process.env.ICON_FOLDER.replace(/\/$/, '').replace(/^\//, '') || 'icons';
+const appDomain = (process.env.APP_DOMAIN || 'http://localhost:5500').replace(/\/$/, '');
+const appRootPath = (process.env.APP_ROUTE_PATH || 'dist').replace(/\/$/, '');
+const iconFolder = (process.env.ICON_FOLDER || 'icons').replace(/\/$/, '').replace(/^\//, '');
+const appleStatusBarStyle = process.env.APPLE_STATUS_BAR_STYLE || 'default';
 const iconFocalPoint = process.env.ICON_FOCAL_POINT || 'center center';
 const siteName = process.env.SITE_NAME || 'My site';
 const siteShortName = process.env.SITE_SHORT_NAME || 'Site';
@@ -65,7 +67,15 @@ async function buildIconMeta() {
   }
 
   <!-- Apple -->
-  <meta name="apple-mobile-web-app-title" content="${siteName}">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="${siteShortName}">
+  <meta name="apple-mobile-web-app-status-bar-style" content="${appleStatusBarStyle}">
+  ${
+    sizes
+      .filter(size => size.type === 'mask-icon')
+      .map(size => `<link rel="mask-icon" href="data:image/svg+xml,%3Csvg width='${size.width}' height='${size.height}' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'%3E%3Cimage href='${encodeURIComponent(`${appDomain}/${appRootPath}${appRootPath ? '/' : ''}${iconFolder}/${size.name}.png`)}' height='${size.height}' width='${size.width}'/%3E%3C/svg%3E" color="${iconColor}">`)
+      .join('\n  ')
+  }
 
   ${
     sizes
@@ -73,7 +83,12 @@ async function buildIconMeta() {
       .map(size => `<link rel="apple-touch-icon" sizes="${size.width}x${size.height}" href="${appRootPath}/${iconFolder}/${size.name}.png">`)
       .join('\n  ')
   }
-  <link rel="mask-icon" href="${appRootPath}/${iconFolder}/pinned-tab.svg" color="${iconColor}">
+  ${
+    sizes
+      .filter(size => size.type === 'apple-startup')
+      .map(size => `<link rel="apple-touch-startup-image" media="(device-width: ${size.width / 2}px) and (device-height: ${size.height / 2}px)" href="/apple-launch-${size.width}x${size.height}.png">`)
+      .join('\n  ')
+  }
 
   <!-- Microsoft -->
   <meta name="msapplication-TileColor" content="${themeColor}">
@@ -109,7 +124,7 @@ async function buildWebmanifest() {
     "icons": [
     ${
     sizes
-      .filter(size => size.type === 'mstile')
+      .filter(size => size.type === 'pwa-icon')
       .map(size => `  {
         "src": "${appRootPath}/${iconFolder}/${size.name}.png",
         "sizes": "${size.width}x${size.height}",
